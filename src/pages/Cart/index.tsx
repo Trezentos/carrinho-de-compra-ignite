@@ -15,7 +15,7 @@ interface Product {
   price: number;
   image: string;
   amount: number;
-  formattedPrice: string;
+  priceFormatted : string;
   formattedSubtotal: string;
 }
 
@@ -24,7 +24,7 @@ const Cart = (): JSX.Element => {
 
   const cartFormatted = cart.map(product => ({
     ...product,
-    formattedPrice: formatPrice(product.price),
+    priceFormatted : formatPrice(product.price),
     formattedSubtotal: formatPrice(product.price * product.amount),
   }))
   const total =
@@ -42,11 +42,6 @@ const Cart = (): JSX.Element => {
   }
 
   function handleProductDecrement(product: Product) {
-    if (product.amount - 1 === 0) {
-      handleRemoveProduct(product.id)
-      return;
-    }
-
     updateProductAmount({
       amount: product.amount - 1,
       productId: product.id
@@ -78,7 +73,7 @@ const Cart = (): JSX.Element => {
               </td>
               <td>
                 <strong>Tênis de Caminhada Leve Confortável</strong>
-                <span>{product.formattedPrice}</span>
+                <span>{product.priceFormatted }</span>
               </td>
               <td>
                 <div>
@@ -106,7 +101,7 @@ const Cart = (): JSX.Element => {
                 </div>
               </td>
               <td>
-                <strong>{product.formattedSubtotal}</strong>
+                <strong>{formatPrice(product.amount * product.price)}</strong>
               </td>
               <td>
                 <button
