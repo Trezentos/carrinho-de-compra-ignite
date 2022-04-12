@@ -34,37 +34,34 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const addProduct = async (productId: number) => {
     try {
-      const productExists = cart.find(product => product.id === productId)
-      const { data: productData } = await api.get(`/products/${productId}`)
-      const { data: stockItem } = await api.get(`/stock/${productId}`)
-      
-      if(!productExists){
-        setCart([...cart, {
-          ...productData,
-          amount: 1,
-        }])
+      const updatedCart = [...cart];
+      const productExists = updatedCart.find(product => product.id === productId);
+      const stock = await api.get(`/stock/${productId}`)
 
-        localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart))
-        return
-      }
+      const stockAmount = stock.data.amount;
+      const currentAmount = productExists ? productExists.amount : 0;
+      const amount = currentAmount + 1;
 
-      if (productExists.amount > stockItem.amount) {
-        toast.error('Quantidade solicitada fora de estoque') 
+      if  (amount > stockAmount) {
+        toast.error('Quantidade solicitada fora de estoque');
         return;
       }
 
-      setCart(cart.map(product =>{
-        if (product.id === productExists.id){
-          return {
-            ...product,
-            amount: product.amount + 1,
-          }
-        }
-        return product
-      }))
-      
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart))
+      if (productExists) {
+        productExists.amount = amount;
+      } else {
+        const product = await api.get(`/products/${productId}`);
 
+        const newProduct  = {
+          ...product.data,
+          amount: 1,
+        }
+
+        updatedCart.push(newProduct);
+      }
+
+      setCart(updatedCart);
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart));
     } catch {
       toast.error('Erro na adição do produto');
     }
@@ -72,14 +69,17 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const removeProduct = (productId: number) => {
     try {
-      const productExists = cart.find(product => product.id === productId)
+      const updatedCart = [...cart];
+      const productExists = updatedCart.find(product => product.id === productId)
       if (!productExists) {
         toast.error('Erro na remoção do produto');
         return;
       }
 
-      setCart(cart.filter(product => product.id !== productId))
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart))
+      const filteredCart = updatedCart.filter(product => product.id !== productId)
+
+      setCart(filteredCart)
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(filteredCart));
     } catch {
       toast.error('Erro na remoção do produto');
     }
@@ -91,30 +91,28 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   }: UpdateProductAmount) => {
     try {
       const { data } = await api.get(`/stock/${productId}`)
+      const stockAmount = data.amount;
+      const updatedCart = [...cart];
 
-      if (amount < 1){
-        toast.error('Erro na alteração de quantidade do produto');
+      if (amount <= 0){
         return;
       }
 
-      if (amount > data.amount) {
+      if (amount > stockAmount) {
         toast.error('Quantidade solicitada fora de estoque') 
-        return
+        return;
       }
 
+      const productExists = updatedCart.find(product => product.id === productId);
 
-      setCart(cart.map(product=>{
-        if (product.id === productId ){
-          return {
-            ...product,
-            amount,
-          }
-        }
-        return product;
-      }))
 
-      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart))
-
+      if (productExists){
+        productExists.amount = amount;
+        setCart(updatedCart);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart))
+      } else {
+        throw Error();
+      }
     } catch {
         toast.error('Erro na alteração de quantidade do produto');
     }
